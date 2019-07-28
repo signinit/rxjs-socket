@@ -1,11 +1,15 @@
 {
   "name": "rxjs-socket",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a library to share rxjs subscriptions between two connected applications",
   "license": "MIT",
   "main": "dist",
   "scripts": {
     "build": "tsc"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/signinit/rxjs-socket.git"
   },
   "author": "Bela Bohlender",
   "dependencies": {
