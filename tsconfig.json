@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "outDir": "dist",
+        "lib": [
+            "es5",
+            "esnext",
+            "dom"
+        ],
+        "jsx": "react",
+        "target": "es5",
+        "declaration": true,
+        "strict": true
+    },
+    "include": ["./src"],
+    "exclude": []
+}

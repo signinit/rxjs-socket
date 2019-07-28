@@ -1,0 +1,14 @@
+{
+  "name": "rxjs-socket",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "Bela Bohlender",
+  "license": "ISC",
+  "dependencies": {
+    "rxjs": "^6.5.2"
+  }
+}
