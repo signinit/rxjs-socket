@@ -1,13 +1,13 @@
 {
   "name": "rxjs-socket",
   "version": "1.0.0",
-  "description": "",
+  "description": "a library to share rxjs subscriptions between two connected applications",
+  "license": "MIT",
   "main": "dist",
   "scripts": {
     "build": "tsc"
   },
   "author": "Bela Bohlender",
-  "license": "ISC",
   "dependencies": {
     "rxjs": "^6.5.2"
   }

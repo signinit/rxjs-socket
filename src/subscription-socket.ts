@@ -1,39 +1,67 @@
-import { Observable, Subject, Subscriber } from "rxjs";
-import { GetInput, ObservableResources, GetOutput } from "./observable-resource";
-import { takeUntil, filter } from "rxjs/operators";
-import { Message } from "./message";
+import { Observable, Subject, Subscriber } from "rxjs"
+import { GetInput, ObservableResources, GetOutput } from "./observable-resource"
+import { takeUntil, filter } from "rxjs/operators"
 
+/**
+ * the abstract socket to manage the subscriptions and resources
+ * InternalResources - the resources which need to be provided
+ * ExternalResources - the resources which can be subscribed to
+ */
 export abstract class SubscriptionSocket<
     InternalResources extends ObservableResources = any,
     ExternalResources extends ObservableResources = any
 > {
     
+    /**
+     * a subject to fire when a subscription should be unsubscribed
+     * the value is the id of the subscription to unsubscribe from
+     * undefined means unsubscribe from all subscriptions
+     */
     private unsubscribeSubject = new Subject<number | undefined>()
     
+    /**
+     * a list that knows which external resources are open
+     */
     private externalResourceIsOpen: Array<boolean> = []
+
+    /**
+     * a list that knows which internal resources are open
+     */
     private internalResourceIsOpen: Array<boolean> = []
     
+    /**
+     * simple counter to make unique subscription ids
+     */
     private counter: number = 0
+
+    /**
+     * a map of all subscribers currently subscriped to mapped by the subscription id they belong to
+     */
     private subscriberMap: Map<number, Subscriber<any>> = new Map()
-    
-    protected onClose: () => void
 
     constructor(
         protected onError: (error: any) => void,
-        onClose: () => void,
-        private subscriptions: InternalResources
-    ) {
-        this.onClose = () => {
-            this.externalResourceIsOpen = []
-            this.internalResourceIsOpen = []
-            this.subscriberMap.forEach(subscriber => subscriber.error("server disconnected"))
-            this.subscriberMap.clear()
-            this.unsubscribeSubject.next(undefined)
-            onClose()
-        }
+        private customOnClose: () => void,
+        private resources: InternalResources
+    ) {}
+
+    /**
+     * should be executed to clear all the subscriptions and resources
+     */
+    protected onClose() {
+        this.externalResourceIsOpen = []
+        this.internalResourceIsOpen = []
+        this.subscriberMap.forEach(subscriber => subscriber.error("server disconnected"))
+        this.subscriberMap.clear()
+        this.unsubscribeSubject.next(undefined)
+        this.customOnClose()
     }
 
-    onMessage(message: string): void {
+    /**
+     * gets executed when a new message was retrieved
+     * @param message the retrieved message content
+     */
+    protected onMessage(message: string): void {
         let json: any
         try {
             json = JSON.parse(message)
@@ -56,17 +84,19 @@ export abstract class SubscriptionSocket<
                     this.onError("missing param name on message type 'subscribe'")
                     return
                 }
-                let subscription = this.subscriptions[json.name]
-                if(subscription == null) {
-                    this.send({
-                        type: "error",
-                        error: `cant subscribe to "${json.name}"`,
-                        subscriptionId
-                    })
+                let resource = this.resources[json.name]
+                if(resource == null) {
+                    this.send(
+                        JSON.stringify({
+                            type: "error",
+                            error: `cant subscribe to "${json.name}"`,
+                            subscriptionId
+                        })
+                    )
                     return
                 }
                 this.internalResourceIsOpen[subscriptionId] = true
-                subscription(json.data)
+                resource(json.data)
                     .pipe(
                         takeUntil(
                             this.unsubscribeSubject.pipe(
@@ -77,24 +107,26 @@ export abstract class SubscriptionSocket<
                             )
                         )
                     ).subscribe(
-                        next => this.send({
+                        next => this.send(JSON.stringify({
                             type: "next",
                             next,
                             subscriptionId
-                        }),
+                        })),
                         error =>
-                            this.send({
+                            this.send(JSON.stringify({
                             type: "error",
                             error: error.toString(),
                             subscriptionId
-                        }),
+                        })),
                         () => {
                             if(this.internalResourceIsOpen[subscriptionId]) {
                                 delete this.internalResourceIsOpen[subscriptionId]
-                                this.send({
-                                    type: "complete",
-                                    subscriptionId,
-                                })
+                                this.send(
+                                    JSON.stringify({
+                                        type: "complete",
+                                        subscriptionId,
+                                    })
+                                )
                             }
                         }
                     )
@@ -119,6 +151,7 @@ export abstract class SubscriptionSocket<
                     return
                 }
                 subscriber.error(json.error)
+                this.subscriberMap.delete(subscriptionId)
                 break
             case "complete":
                 delete this.externalResourceIsOpen[subscriptionId]
@@ -128,6 +161,7 @@ export abstract class SubscriptionSocket<
                     return
                 }
                 subscriber.complete()
+                this.subscriberMap.delete(subscriptionId)
                 break
             default:
                 subscriber = this.subscriberMap.get(subscriptionId)
@@ -140,6 +174,11 @@ export abstract class SubscriptionSocket<
         }
     }
 
+    /**
+     * function to observe an external resource
+     * @param name the name of the resource
+     * @param data the additional data for this resource
+     */
     public observe<Name extends keyof ExternalResources>(
         name: Name,
         data: GetInput<ExternalResources[Name]>
@@ -148,26 +187,34 @@ export abstract class SubscriptionSocket<
             let subscriptionId = this.counter
             this.externalResourceIsOpen[subscriptionId] = true
             ++this.counter
-            this.send({
-                type: "subscribe",
-                subscriptionId,
-                name: <string>name,
-                data
-            })
+            this.send(
+                JSON.stringify({
+                    type: "subscribe",
+                    subscriptionId,
+                    name: <string>name,
+                    data
+                })
+            )
             this.subscriberMap.set(subscriptionId, subscriber)
             return () => {
                 if(this.externalResourceIsOpen[subscriptionId]) {
                     delete this.externalResourceIsOpen[subscriptionId]
-                    this.send({
-                        type: "unsubscribe",
-                        subscriptionId
-                    })
+                    this.send(
+                        JSON.stringify({
+                            type: "unsubscribe",
+                            subscriptionId
+                        })
+                    )
                     this.subscriberMap.delete(subscriptionId)
                 }
             }
         })
     }
 
-    protected abstract send(message: Message): void
+    /**
+     * writes the a message to the other subscription socket
+     * @param message the content to send
+     */
+    protected abstract send(message: string): void
 
 }
