@@ -86,3 +86,7 @@ completes the selected subscription
     "subscriptionId": 10
 }
 ```
+
+## License
+
+See the [LICENSE](License.md) file for license rights and limitations (MIT).
