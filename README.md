@@ -89,4 +89,4 @@ completes the selected subscription
 
 ## License
 
-See the [LICENSE](License.md) file for license rights and limitations (MIT).
+See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
