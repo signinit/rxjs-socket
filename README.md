@@ -87,6 +87,19 @@ completes the selected subscription
 }
 ```
 
+## Examples
+
+* [Browser Websocket](examples/browser-websocket.ts)   
+Only useable in the browser.
+
+* [Node Server Websocket](examples/node-server-websocket.ts)  
+Represents a websocket connection on a websocket server.
+Depedens on the popular nodejs "ws" npm package.
+
+* [Node Websocket](examples/node-websocket.ts)   
+Only useable in nodejs.
+Depedens on the popular nodejs "ws" npm package.
+
 ## License
 
 See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
