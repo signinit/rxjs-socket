@@ -1,6 +1,6 @@
 {
   "name": "rxjs-socket",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "a library to share rxjs subscriptions between two connected applications",
   "license": "MIT",
   "main": "dist",
